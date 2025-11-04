@@ -37,8 +37,8 @@ target_link_libraries(compare_th_if ${OpenCV_LIBS})
 target_include_directories(compare_th_if PUBLIC ${OpenCV_INCLUDE_DIRS})
 
 # Eigen3のincludeパスを指定
-target_include_directories(${PROJECT_NAME} PUBLIC "./include/eigen-3.4.0")
-target_include_directories(compare_th_if PUBLIC "./include/eigen-3.4.0")
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/include/eigen-3.4.0")
+target_include_directories(compare_th_if PUBLIC "${CMAKE_SOURCE_DIR}/include/eigen-3.4.0")
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
