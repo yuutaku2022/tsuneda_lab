@@ -14,14 +14,31 @@ project(steganography_project)
 # 実行ファイルを作成
 add_executable(${PROJECT_NAME} src/main.cpp src/matrix_transform_utils.cpp src/embed_by_bit_inversion.cpp src/embed_by_threshold_adjust.cpp)
 
+# THとIFの比較用実行ファイルを作成
+add_executable(compare_th_if src/compare_th_if.cpp src/matrix_transform_utils.cpp src/embed_by_threshold_adjust.cpp)
+
 # OpenCVライブラリを探す
+# OpenCVのパスを指定（Windows環境の場合）
+if(WIN32 AND NOT OpenCV_DIR)
+    # 一般的なOpenCVのインストールパスを確認
+    if(EXISTS "C:/opencv/build")
+        set(OpenCV_DIR "C:/opencv/build" CACHE PATH "OpenCV directory")
+    elseif(EXISTS "C:/opencv/build/x64/vc15")
+        set(OpenCV_DIR "C:/opencv/build/x64/vc15" CACHE PATH "OpenCV directory")
+    endif()
+endif()
 find_package(OpenCV REQUIRED)
 
 # OpenCVライブラリをリンク
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
+target_link_libraries(compare_th_if ${OpenCV_LIBS})
+
+# OpenCVのincludeディレクトリを追加
+target_include_directories(compare_th_if PUBLIC ${OpenCV_INCLUDE_DIRS})
 
 # Eigen3のincludeパスを指定
 target_include_directories(${PROJECT_NAME} PUBLIC "./include/eigen-3.4.0")
+target_include_directories(compare_th_if PUBLIC "./include/eigen-3.4.0")
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
