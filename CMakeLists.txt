@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(steganography_project)
 
 # 🔽 ここに追加！
-include_directories(${PROJECT_SOURCE_DIR}/include/eigen-3.4.0/Eigen)
+include_directories(${PROJECT_SOURCE_DIR}/include/eigen-3.4.0)
 
 # 実行ファイルを作成
 add_executable(${PROJECT_NAME} src/main.cpp src/matrix_transform_utils.cpp src/embed_by_bit_inversion.cpp src/embed_by_threshold_adjust.cpp)
