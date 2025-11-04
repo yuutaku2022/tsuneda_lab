@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/yuuta/tsuneda_lab/komori/プログラム/steganography_project
+CMAKE_SOURCE_DIR = /mnt/c/Users/yuuta/Documents/tsuneda_lab
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/yuuta/tsuneda_lab/komori/プログラム/steganography_project/build
+CMAKE_BINARY_DIR = /mnt/c/Users/yuuta/Documents/tsuneda_lab/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -78,7 +78,7 @@ package/fast: package
 # Special rule for the target package_source
 package_source:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool for source..."
-	/usr/bin/cpack --config ./CPackSourceConfig.cmake /mnt/c/Users/yuuta/tsuneda_lab/komori/プログラム/steganography_project/build/CPackSourceConfig.cmake
+	/usr/bin/cpack --config ./CPackSourceConfig.cmake /mnt/c/Users/yuuta/Documents/tsuneda_lab/build/CPackSourceConfig.cmake
 .PHONY : package_source
 
 # Special rule for the target package_source
@@ -107,9 +107,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/yuuta/tsuneda_lab/komori/プログラム/steganography_project/build/CMakeFiles /mnt/c/Users/yuuta/tsuneda_lab/komori/プログラム/steganography_project/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/yuuta/Documents/tsuneda_lab/build/CMakeFiles /mnt/c/Users/yuuta/Documents/tsuneda_lab/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/yuuta/tsuneda_lab/komori/プログラム/steganography_project/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/yuuta/Documents/tsuneda_lab/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -149,6 +149,43 @@ steganography_project/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/steganography_project.dir/build.make CMakeFiles/steganography_project.dir/build
 .PHONY : steganography_project/fast
 
+#=============================================================================
+# Target rules for targets named compare_th_if
+
+# Build rule for target.
+compare_th_if: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 compare_th_if
+.PHONY : compare_th_if
+
+# fast build rule for target.
+compare_th_if/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/build
+.PHONY : compare_th_if/fast
+
+src/compare_th_if.o: src/compare_th_if.cpp.o
+.PHONY : src/compare_th_if.o
+
+# target to build an object file
+src/compare_th_if.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/src/compare_th_if.cpp.o
+.PHONY : src/compare_th_if.cpp.o
+
+src/compare_th_if.i: src/compare_th_if.cpp.i
+.PHONY : src/compare_th_if.i
+
+# target to preprocess a source file
+src/compare_th_if.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/src/compare_th_if.cpp.i
+.PHONY : src/compare_th_if.cpp.i
+
+src/compare_th_if.s: src/compare_th_if.cpp.s
+.PHONY : src/compare_th_if.s
+
+# target to generate assembly for a file
+src/compare_th_if.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/src/compare_th_if.cpp.s
+.PHONY : src/compare_th_if.cpp.s
+
 src/embed_by_bit_inversion.o: src/embed_by_bit_inversion.cpp.o
 .PHONY : src/embed_by_bit_inversion.o
 
@@ -179,6 +216,7 @@ src/embed_by_threshold_adjust.o: src/embed_by_threshold_adjust.cpp.o
 # target to build an object file
 src/embed_by_threshold_adjust.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/steganography_project.dir/build.make CMakeFiles/steganography_project.dir/src/embed_by_threshold_adjust.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/src/embed_by_threshold_adjust.cpp.o
 .PHONY : src/embed_by_threshold_adjust.cpp.o
 
 src/embed_by_threshold_adjust.i: src/embed_by_threshold_adjust.cpp.i
@@ -187,6 +225,7 @@ src/embed_by_threshold_adjust.i: src/embed_by_threshold_adjust.cpp.i
 # target to preprocess a source file
 src/embed_by_threshold_adjust.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/steganography_project.dir/build.make CMakeFiles/steganography_project.dir/src/embed_by_threshold_adjust.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/src/embed_by_threshold_adjust.cpp.i
 .PHONY : src/embed_by_threshold_adjust.cpp.i
 
 src/embed_by_threshold_adjust.s: src/embed_by_threshold_adjust.cpp.s
@@ -195,6 +234,7 @@ src/embed_by_threshold_adjust.s: src/embed_by_threshold_adjust.cpp.s
 # target to generate assembly for a file
 src/embed_by_threshold_adjust.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/steganography_project.dir/build.make CMakeFiles/steganography_project.dir/src/embed_by_threshold_adjust.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/src/embed_by_threshold_adjust.cpp.s
 .PHONY : src/embed_by_threshold_adjust.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -227,6 +267,7 @@ src/matrix_transform_utils.o: src/matrix_transform_utils.cpp.o
 # target to build an object file
 src/matrix_transform_utils.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/steganography_project.dir/build.make CMakeFiles/steganography_project.dir/src/matrix_transform_utils.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/src/matrix_transform_utils.cpp.o
 .PHONY : src/matrix_transform_utils.cpp.o
 
 src/matrix_transform_utils.i: src/matrix_transform_utils.cpp.i
@@ -235,6 +276,7 @@ src/matrix_transform_utils.i: src/matrix_transform_utils.cpp.i
 # target to preprocess a source file
 src/matrix_transform_utils.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/steganography_project.dir/build.make CMakeFiles/steganography_project.dir/src/matrix_transform_utils.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/src/matrix_transform_utils.cpp.i
 .PHONY : src/matrix_transform_utils.cpp.i
 
 src/matrix_transform_utils.s: src/matrix_transform_utils.cpp.s
@@ -243,6 +285,7 @@ src/matrix_transform_utils.s: src/matrix_transform_utils.cpp.s
 # target to generate assembly for a file
 src/matrix_transform_utils.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/steganography_project.dir/build.make CMakeFiles/steganography_project.dir/src/matrix_transform_utils.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/compare_th_if.dir/build.make CMakeFiles/compare_th_if.dir/src/matrix_transform_utils.cpp.s
 .PHONY : src/matrix_transform_utils.cpp.s
 
 # Help Target
@@ -255,7 +298,11 @@ help:
 	@echo "... package"
 	@echo "... package_source"
 	@echo "... rebuild_cache"
+	@echo "... compare_th_if"
 	@echo "... steganography_project"
+	@echo "... src/compare_th_if.o"
+	@echo "... src/compare_th_if.i"
+	@echo "... src/compare_th_if.s"
 	@echo "... src/embed_by_bit_inversion.o"
 	@echo "... src/embed_by_bit_inversion.i"
 	@echo "... src/embed_by_bit_inversion.s"
