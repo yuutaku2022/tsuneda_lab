@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/mnt/c/Users/yuuta/Documents/tsuneda_lab/include/eigen-3.4.0 -isystem /usr/include/opencv4
+CXX_INCLUDES = -I/usr/include/eigen3 -isystem /usr/include/opencv4
 
 CXX_FLAGS = -std=gnu++17
 
