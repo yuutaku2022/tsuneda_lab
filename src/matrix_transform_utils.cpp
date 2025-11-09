@@ -100,11 +100,6 @@ vector<vector<int>> generateDebruijnMatrix(int N, const std::string& debruijnSeq
       debruijnSeq.erase(std::remove(debruijnSeq.begin(), debruijnSeq.end(), '\r'), debruijnSeq.end());
       debruijnSeq.erase(std::remove(debruijnSeq.begin(), debruijnSeq.end(), '\n'), debruijnSeq.end());
       
-      // 先頭にプレフィックス"00000000"がある場合は削除
-      if (debruijnSeq.length() >= 8 && debruijnSeq.substr(0, 8) == "00000000") {
-        debruijnSeq = debruijnSeq.substr(8);
-      }
-      
       cout << "使用するドブルイン系列：" << debruijnSeq << endl;
       break;
     }
@@ -119,13 +114,32 @@ vector<vector<int>> generateDebruijnMatrix(int N, const std::string& debruijnSeq
 
   // ドブルイン系列の長さに合わせた窓サイズを設定
   size_t seqLength = debruijnSeq.length();
-  if (seqLength == 64) {
+  
+  // 先頭にプレフィックス"00000000"がある場合の処理
+  // ファイルフォーマット: プレフィックス(8文字) + データ(248文字) = 256文字
+  // または、データのみ(64文字 or 256文字)
+  if (seqLength == 256 && seqLength >= 8 && debruijnSeq.substr(0, 8) == "00000000") {
+    // プレフィックスを含めて256文字の場合、プレフィックスはデータの一部として扱う
+    // または、プレフィックスを削除して248文字のデータを使用する
+    // ここでは、プレフィックスを含めた256文字全体を使用する
+    windowSize = 8;
+  } else if (seqLength == 64) {
     windowSize = 6;
   } else if (seqLength == 256) {
     windowSize = 8;
+  } else if (seqLength == 248) {
+    // プレフィックスを削除した後の248文字の場合
+    // 248文字では256個の値（2^8）を表現できないため、
+    // 循環的に拡張して256文字にする必要がある
+    // または、プレフィックスを追加して256文字にする
+    std::cerr << "警告: ドブルイン系列長が248文字です。256文字に拡張します。" << std::endl;
+    // プレフィックス"00000000"を追加して256文字にする
+    debruijnSeq = "00000000" + debruijnSeq;
+    seqLength = 256;
+    windowSize = 8;
   } else {
     std::cerr << "エラー: ドブルイン系列長が未対応の長さです (長さ: " << seqLength << ")" << std::endl;
-    throw std::runtime_error("エラー: ドブルイン系列長が未対応の長さです。64または256文字である必要があります。");
+    throw std::runtime_error("エラー: ドブルイン系列長が未対応の長さです。64または256文字（プレフィックス含む）である必要があります。");
   }
   
   // Nと系列長の整合性チェック
