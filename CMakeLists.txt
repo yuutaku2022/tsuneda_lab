@@ -11,9 +11,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # プロジェクト名を設定
 project(steganography_project)
 
-# 🔽 ここに追加！
-include_directories(${PROJECT_SOURCE_DIR}/include/eigen-3.4.0)
-
 # 実行ファイルを作成
 add_executable(${PROJECT_NAME} src/main.cpp src/matrix_transform_utils.cpp src/embed_by_bit_inversion.cpp src/embed_by_threshold_adjust.cpp)
 
@@ -39,9 +36,19 @@ target_link_libraries(compare_th_if ${OpenCV_LIBS})
 # OpenCVのincludeディレクトリを追加
 target_include_directories(compare_th_if PUBLIC ${OpenCV_INCLUDE_DIRS})
 
-# Eigen3のincludeパスを指定
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/include/eigen-3.4.0")
-target_include_directories(compare_th_if PUBLIC "${CMAKE_SOURCE_DIR}/include/eigen-3.4.0")
+# Eigen3ライブラリを探す（システムにインストールされているものを優先）
+find_package(Eigen3 3.4 QUIET)
+if(Eigen3_FOUND)
+    # システムにインストールされているEigen3を使用
+    message(STATUS "Found Eigen3: ${EIGEN3_INCLUDE_DIR}")
+    target_include_directories(${PROJECT_NAME} PUBLIC ${EIGEN3_INCLUDE_DIR})
+    target_include_directories(compare_th_if PUBLIC ${EIGEN3_INCLUDE_DIR})
+else()
+    # システムにEigen3が見つからない場合は、ローカルのEigen3を使用
+    message(STATUS "Eigen3 not found in system, using local: ${CMAKE_SOURCE_DIR}/include/eigen-3.4.0")
+    target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/include/eigen-3.4.0")
+    target_include_directories(compare_th_if PUBLIC "${CMAKE_SOURCE_DIR}/include/eigen-3.4.0")
+endif()
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
