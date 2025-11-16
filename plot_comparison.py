@@ -85,65 +85,6 @@ def plot_psnr_heatmap(df, matrix_type, output_dir):
     print(f"保存: {output_path}")
     plt.close()
 
-def plot_psnr_3d(df, matrix_type, output_dir):
-    """3Dサーフェスプロットを作成"""
-    from mpl_toolkits.mplot3d import Axes3D
-    
-    df_subset = df[df['Matrix Type'] == matrix_type]
-    
-    if df_subset.empty:
-        return
-    
-    # データの準備
-    TH_values = sorted(df_subset['TH'].unique())
-    IF_values = sorted(df_subset['IF'].unique())
-    
-    X, Y = np.meshgrid(TH_values, IF_values)
-    
-    # Stego PSNR
-    Z_stego = np.zeros_like(X, dtype=float)
-    for i, if_val in enumerate(IF_values):
-        for j, th_val in enumerate(TH_values):
-            mask = (df_subset['IF'] == if_val) & (df_subset['TH'] == th_val)
-            if mask.any():
-                Z_stego[i, j] = df_subset[mask]['Stego PSNR'].mean()
-    
-    # Extracted PSNR
-    Z_extracted = np.zeros_like(X, dtype=float)
-    for i, if_val in enumerate(IF_values):
-        for j, th_val in enumerate(TH_values):
-            mask = (df_subset['IF'] == if_val) & (df_subset['TH'] == th_val)
-            if mask.any():
-                Z_extracted[i, j] = df_subset[mask]['Extracted PSNR'].mean()
-    
-    # 3Dプロット
-    fig = plt.figure(figsize=(16, 6))
-    
-    # Stego PSNR
-    ax1 = fig.add_subplot(121, projection='3d')
-    surf1 = ax1.plot_surface(X, Y, Z_stego, cmap='viridis', alpha=0.9, edgecolor='none')
-    ax1.set_xlabel('TH (Threshold)', fontsize=10)
-    ax1.set_ylabel('IF (Insert Factor)', fontsize=10)
-    ax1.set_zlabel('PSNR (dB)', fontsize=10)
-    ax1.set_title(f'{matrix_type} - Stego Image PSNR', fontsize=11, fontweight='bold')
-    fig.colorbar(surf1, ax=ax1, shrink=0.5)
-    
-    # Extracted PSNR
-    ax2 = fig.add_subplot(122, projection='3d')
-    surf2 = ax2.plot_surface(X, Y, Z_extracted, cmap='plasma', alpha=0.9, edgecolor='none')
-    ax2.set_xlabel('TH (Threshold)', fontsize=10)
-    ax2.set_ylabel('IF (Insert Factor)', fontsize=10)
-    ax2.set_zlabel('PSNR (dB)', fontsize=10)
-    ax2.set_title(f'{matrix_type} - Extracted Image PSNR', fontsize=11, fontweight='bold')
-    fig.colorbar(surf2, ax=ax2, shrink=0.5)
-    
-    plt.tight_layout()
-    
-    # 保存
-    output_path = os.path.join(output_dir, f'{matrix_type}_3d.png')
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"保存: {output_path}")
-    plt.close()
 
 def plot_psnr_line(df, matrix_type, output_dir):
     """IF固定でのTH vs PSNR、TH固定でのIF vs PSNRの線グラフ"""
@@ -152,35 +93,10 @@ def plot_psnr_line(df, matrix_type, output_dir):
     if df_subset.empty:
         return
     
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    
-    # IF固定でTHを変えた場合（Stego PSNR）
-    ax1 = axes[0, 0]
-    IF_values = sorted(df_subset['IF'].unique())
-    for if_val in IF_values[:4]:  # 最初の4つのIF値のみ
-        data = df_subset[df_subset['IF'] == if_val]
-        if not data.empty:
-            ax1.plot(data['TH'], data['Stego PSNR'], marker='o', label=f'IF={if_val:.2f}', linewidth=2)
-    ax1.set_xlabel('TH (Threshold)', fontsize=11)
-    ax1.set_ylabel('Stego PSNR (dB)', fontsize=11)
-    ax1.set_title(f'{matrix_type} - IF固定、TH変化', fontsize=11, fontweight='bold')
-    ax1.legend()
-    ax1.grid(True, alpha=0.3)
-    
-    # IF固定でTHを変えた場合（Extracted PSNR）
-    ax2 = axes[0, 1]
-    for if_val in IF_values[:4]:
-        data = df_subset[df_subset['IF'] == if_val]
-        if not data.empty:
-            ax2.plot(data['TH'], data['Extracted PSNR'], marker='o', label=f'IF={if_val:.2f}', linewidth=2)
-    ax2.set_xlabel('TH (Threshold)', fontsize=11)
-    ax2.set_ylabel('Extracted PSNR (dB)', fontsize=11)
-    ax2.set_title(f'{matrix_type} - IF固定、TH変化', fontsize=11, fontweight='bold')
-    ax2.legend()
-    ax2.grid(True, alpha=0.3)
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
     # TH固定でIFを変えた場合（Stego PSNR）
-    ax3 = axes[1, 0]
+    ax3, ax4 = axes
     TH_values = sorted(df_subset['TH'].unique())
     for th_val in TH_values[::2]:  # 間引いて表示
         data = df_subset[df_subset['TH'] == th_val]
@@ -193,7 +109,6 @@ def plot_psnr_line(df, matrix_type, output_dir):
     ax3.grid(True, alpha=0.3)
     
     # TH固定でIFを変えた場合（Extracted PSNR）
-    ax4 = axes[1, 1]
     for th_val in TH_values[::2]:
         data = df_subset[df_subset['TH'] == th_val]
         if not data.empty:
@@ -213,11 +128,14 @@ def plot_psnr_line(df, matrix_type, output_dir):
     plt.close()
 
 def main():
-    # CSVファイルのパス
-    csv_path = "../output/th_if_comparison/comparison_results.csv"
+    # スクリプトのディレクトリを取得
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # CSVファイルのパス（スクリプトの場所に基づいて相対パスを計算）
+    csv_path = os.path.join(script_dir, "output", "th_if_comparison", "comparison_results.csv")
     
     # 出力ディレクトリ
-    output_dir = "../output/th_if_comparison/plots"
+    output_dir = os.path.join(script_dir, "output", "th_if_comparison", "plots")
     os.makedirs(output_dir, exist_ok=True)
     
     # データを読み込み
@@ -237,7 +155,6 @@ def main():
     for matrix_type in matrix_types:
         print(f"\n{matrix_type} のプロットを生成中...")
         plot_psnr_heatmap(df, matrix_type, output_dir)
-        plot_psnr_3d(df, matrix_type, output_dir)
         plot_psnr_line(df, matrix_type, output_dir)
     
     # 全体の比較プロット
