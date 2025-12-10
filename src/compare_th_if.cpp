@@ -1,3 +1,4 @@
+// main.cpp
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -7,10 +8,12 @@
 #include <sstream>
 #include <vector>
 #include <tuple>
+#include <stdexcept>
 
 #include "Eigen/Dense"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/opencv.hpp"
+#include "matrix_transform_utils.hpp" 
 
 #include "matrix_transform_utils.hpp"
 #include "embed_by_threshold_adjust.hpp"
@@ -18,16 +21,14 @@
 using std::cout;
 using std::endl;
 using std::vector;
+using std::string;
+using std::tuple;
 
-/**
- * カバー画像と秘密画像を切り替えながらTHとIFを変えて実行し、結果をCSVに出力する
- */
 int main() {
-    // カバー画像のサイズ
-    const int N = 256;
+    const int N = 256; // カバー画像サイズ
 
-    // <--- 変更: 読み込むカバー画像のリストを定義
-    vector<std::tuple<std::string, std::string, std::string>> coverImages = {
+    // --- 入力画像リスト ---
+    vector<tuple<string, string, string>> coverImages = {
         {"../input/img/cover_image/Lenna_grayscale_256.bmp", "Lenna_256", "Lenna_256"},
         {"../input/img/cover_image/barbara256.bmp", "barbara256", "barbara256"},
         {"../input/img/cover_image/airplane256.bmp", "airplane256", "airplane256"},
@@ -36,197 +37,151 @@ int main() {
         {"../input/img/cover_image/mandrill256.bmp", "mandrill256", "mandrill256"},
         {"../input/img/cover_image/LAX.bmp", "LAX", "LAX"},
         {"../input/img/cover_image/Text.bmp", "Text", "Text"}
-        // 必要に応じて他のカバー画像（256x256）を追加
     };
 
-    // 読み込む秘密画像のリスト
-    vector<std::tuple<std::string, std::string, std::string>> secretImages = {
+    vector<tuple<string, string, string>> secretImages = {
         {"../input/img/secret_image/secret_grayscale_64x64.bmp", "secret_64x64", "secret_64x64"},
         {"../input/img/secret_image/secret_grayscale_128x128.bmp", "secret_128x128", "secret_128x128"},
         {"../input/img/secret_image/secret_grayscale_256x256.bmp", "secret_256x256", "secret_256x256"},
-        {"../input/img/secret_image/airplane256.bmp", "airplane256", "airplane256"}, // カバー画像と重複するためコメントアウト
+        {"../input/img/secret_image/airplane256.bmp", "airplane256", "airplane256"},
         {"../input/img/secret_image/barbara256.bmp", "barbara256", "barbara256"},
         {"../input/img/secret_image/boat256.bmp", "boat256", "boat256"},
         {"../input/img/secret_image/cameraman256.bmp", "cameraman256", "cameraman256"},
         {"../input/img/secret_image/LAX.bmp", "LAX", "LAX"},
         {"../input/img/secret_image/Text.bmp", "Text", "Text"},
-        {"../input/img/secret_image/mandrill256.bmp", "mandrill256", "mandrill256"}, // カバー画像と重複するためコメントアウト
+        {"../input/img/secret_image/mandrill256.bmp", "mandrill256", "mandrill256"}
     };
 
-    // ドブルイン系列のdatファイルのパス
-    std::string debruijnSeqFilePath;
+    // ドブルイン系列ファイル
+    string debruijnSeqFilePath;
     switch (N) {
-        case 64:
-            debruijnSeqFilePath = "../input/debruijn/deb64.dat";
-            break;
-        case 256:
-            debruijnSeqFilePath = "../input/debruijn/deb256.dat";
-            break;
+        case 64:  debruijnSeqFilePath = "../input/debruijn/deb64.dat"; break;
+        case 256: debruijnSeqFilePath = "../input/debruijn/deb256.dat"; break;
         default:
-            std::cerr << "エラー: ドブルイン系列のファイルが開けませんでした。" << std::endl;
+            std::cerr << "エラー: ドブルイン系列ファイルが未対応サイズです。" << endl;
             return 1;
     }
-    const int targetLine = 10;
-    const int lineStartIndex = 0;
 
-    // 直交行列を生成
-    vector<vector<int>> SylvesterHadamardMatrix = generateSylvesterHadamardMatrix(N);
-    vector<vector<int>> WalshHadamardMatrix     = generateWalshHadamardMatrix(N);
-    vector<vector<int>> debruijnMatrix          = generateDebruijnMatrix(N, debruijnSeqFilePath, targetLine, lineStartIndex);
+    // 実験パラメータ
+    int lineStartIndex = 0;
+    const int TH_min = 5, TH_max = 25, TH_step = 1;
+    const double IF_RATIO_OF_THEORY = 0.98;
+    vector<int> targetLineCandidates = {5, 10, 20, 50};
 
     // 出力ディレクトリ
-    std::string outputDir = "../output/cover_image_comparison"; // <--- 変更: 出力ディレクトリ名
+    string outputDir = "../output/cover_image_comparison";
     createDirectory(outputDir);
 
-    // THの範囲とステップを定義
-    const int TH_min = 5;  
-    const int TH_max = 25;  
-    const int TH_step = 1;   
-
-    // THに対するIFの比率
-    const double IF_RATIO_OF_THEORY = 0.98;
-
-    // THとIFの組み合わせ数
-    int TH_count = ((TH_max - TH_min) / TH_step) + 1;
-    int combinations_per_matrix = TH_count;
-    // <--- 変更: total_combinations に coverImages.size() を追加
-    int total_combinations = combinations_per_matrix * 3 * secretImages.size() * coverImages.size();
-
-    // 全体CSVファイル
-    std::string csvFilePath = outputDir + "/comparison_results_all.csv"; // <--- 変更: ファイル名
+    string csvFilePath = outputDir + "/comparison_results_all.csv";
     std::ofstream csvFile(csvFilePath);
+    if (!csvFile.is_open()) {
+        std::cerr << "エラー: 全体CSVが開けません: " << csvFilePath << endl;
+        return 1;
+    }
 
-    // <--- 変更: CSVヘッダーに Cover Image を追加
-    csvFile << "Cover Image,Secret Image,Matrix Type,TH,IF,Stego PSNR,Extracted PSNR" << endl;
+    csvFile << "Cover Image,Secret Image,Matrix Type,TargetLine,TH,IF,Stego PSNR,Extracted PSNR" << endl;
 
-    cout << "カバー画像、秘密画像、THの組み合わせをテストしています..." << endl;
-    cout << "テストカバー画像数: " << coverImages.size() << endl;
-    cout << "テスト秘密画像数: " << secretImages.size() << endl;
-    cout << "TH範囲: " << TH_min << " ～ " << TH_max << " (ステップ: " << TH_step << ")" << endl;
-    cout << "IF: TH / 255.0 * " << IF_RATIO_OF_THEORY << " (動的計算)" << endl;
+    // 総組み合わせ数（進捗用）
+    int TH_count = ((TH_max - TH_min) / TH_step) + 1;
+    long long total_combinations = static_cast<long long>(TH_count)
+                                 * static_cast<long long>(targetLineCandidates.size())
+                                 * static_cast<long long>(coverImages.size())
+                                 * static_cast<long long>(secretImages.size());
+
+    cout << "カバー画像数: " << coverImages.size()
+         << ", 秘密画像数: " << secretImages.size() << endl;
     cout << "総組み合わせ数: " << total_combinations << endl << endl;
 
-    // 行列セット
-    vector<std::tuple<std::string, vector<vector<int>>>> matrixTypes = {
-        {"Sylvester_Hadamard", SylvesterHadamardMatrix},
-        {"Walsh_Hadamard",     WalshHadamardMatrix},
-        {"Debruijn",           debruijnMatrix}
-    };
+    long long progress = 0;
 
-    int progress = 0;
+    // targetLineごとの処理
+    for (int targetLineValue : targetLineCandidates) {
+        cout << "----------------------------------------" << endl;
+        cout << "targetLine = " << targetLineValue << " で実行開始" << endl;
 
-    // <--- 追加: 各カバー画像について実行 (一番外側のループ)
-    for (const auto& [coverImageFilePath, coverImageName, coverImageDisplayName] : coverImages) {
-        
-        cout << "****************************************" << endl;
-        cout << "処理中カバー画像: " << coverImageDisplayName << endl;
-        cout << "****************************************" << endl;
-
-        // 各秘密画像について実行
-        for (const auto& [secretImageFilePath, secretImageName, secretImageDisplayName] : secretImages) {
-
-            cout << "========================================" << endl;
-            cout << "  処理中秘密画像: " << secretImageDisplayName << endl;
-            cout << "========================================" << endl;
-
-            // <--- 変更: 出力ディレクトリ構造 (カバー画像/秘密画像/行列)
-            std::string imageOutputDir = outputDir + "/" + coverImageName + "/" + secretImageName;
-            createDirectory(imageOutputDir); // (注: createDirectoryが深い階層も一括作成できる必要があります)
-
-            std::string imageCsvFilePath = imageOutputDir + "/comparison_results.csv";
-            std::ofstream imageCsvFile(imageCsvFilePath);
-
-            imageCsvFile << "Matrix Type,TH,IF,Stego PSNR,Extracted PSNR" << endl;
-
-            // 各行列タイプについて実行
-            for (const auto& [matrixTypeName, orthogonalMatrix] : matrixTypes) {
-
-                std::string matrixOutputDir = imageOutputDir + "/" + matrixTypeName;
-                createDirectory(matrixOutputDir);
-
-                for (int TH = TH_min; TH <= TH_max; TH += TH_step) {
-
-                    double IF = (static_cast<double>(TH) / 255.0) * IF_RATIO_OF_THEORY;
-
-                    progress++;
-                    if (progress % 20 == 0 || progress == total_combinations) { // <--- 変更: 進捗表示の頻度調整
-                        cout << "進捗: " << progress << "/" << total_combinations
-                             << " (" << (progress * 100 / total_combinations) << "%)" 
-                             << " (Cover: " << coverImageName << ", Secret: " << secretImageName << ")" << endl;
-                    }
-
-                    try {
-                        // 埋め込み
-                        auto [stegoImageFilePath, stegoImagePSNR] =
-                            embedByThresholdAdjust(
-                                coverImageFilePath, // <--- 変更: ループ変数を使用
-                                secretImageFilePath,
-                                orthogonalMatrix,
-                                TH, IF,
-                                matrixOutputDir
-                            );
-
-                        // 抽出
-                        auto [extractedImageFilePath, extractedImagePSNR] =
-                            extractByThresholdAdjust(
-                                stegoImageFilePath,
-                                secretImageFilePath,
-                                orthogonalMatrix,
-                                TH, IF,
-                                matrixOutputDir
-                            );
-
-                        // <--- 変更: 全体CSVに Cover Image を追加
-                        csvFile << coverImageDisplayName << ","
-                                << secretImageDisplayName << ","
-                                << matrixTypeName << ","
-                                << TH << ","
-                                << std::fixed << std::setprecision(4) << IF << "," // <--- 変更: IFの精度
-                                << std::fixed << std::setprecision(2) << stegoImagePSNR << ","
-                                << std::fixed << std::setprecision(2) << extractedImagePSNR
-                                << endl;
-
-                        // 画像ごとCSV
-                        imageCsvFile << matrixTypeName << ","
-                                     << TH << ","
-                                     << std::fixed << std::setprecision(4) << IF << "," // <--- 変更: IFの精度
-                                     << std::fixed << std::setprecision(2) << stegoImagePSNR << ","
-                                     << std::fixed << std::setprecision(2) << extractedImagePSNR
-                                     << endl;
-
-                    } catch (const std::exception& e) {
-
-                        std::cerr << "エラー (Cover=" << coverImageDisplayName
-                                  << ", Secret=" << secretImageDisplayName
-                                  << ", TH=" << TH << ", IF=" << IF
-                                  << ", Matrix=" << matrixTypeName << "): "
-                                  << e.what() << endl;
-
-                        // <--- 変更: エラーログにも Cover Image を追加
-                        csvFile << coverImageDisplayName << ","
-                                << secretImageDisplayName << ","
-                                << matrixTypeName << "," << TH << ","
-                                << std::fixed << std::setprecision(4) << IF
-                                << ",ERROR,ERROR" << endl;
-
-                        imageCsvFile << matrixTypeName << ","
-                                     << TH << ","
-                                     << std::fixed << std::setprecision(4) << IF
-                                     << ",ERROR,ERROR" << endl;
-                    }
-                }
-            }
-
-            imageCsvFile.close();
-            cout << "  " << secretImageDisplayName << " の処理が完了しました。" << endl;
-            cout << "  結果は " << imageCsvFilePath << " に保存されました。" << endl << endl;
+        // ドブルイン行列生成
+        vector<vector<int>> debruijnMatrix;
+        try {
+            debruijnMatrix = generateDebruijnMatrix(N, debruijnSeqFilePath, targetLineValue, lineStartIndex);
+        } catch (const std::exception& e) {
+            std::cerr << "Debruijn行列生成失敗 (targetLine=" << targetLineValue << "): " << e.what() << endl;
+            continue;
         }
-    } // <--- 追加: カバー画像のループ閉じ
+
+        vector<tuple<string, vector<vector<int>>>> matrixTypes = {
+            {"Debruijn_t" + std::to_string(targetLineValue), debruijnMatrix}
+        };
+
+        for (const auto& [coverPath, coverName, coverDisp] : coverImages) {
+            for (const auto& [secretPath, secretName, secretDisp] : secretImages) {
+
+                string imageOutputDir = outputDir + "/" + coverName + "/" + secretName;
+                createDirectory(imageOutputDir);
+
+                string imageCsvPath = imageOutputDir + "/comparison_results.csv";
+                std::ofstream imageCsvFile(imageCsvPath);
+                if (imageCsvFile.is_open()) {
+                    imageCsvFile << "Matrix Type,TH,IF,Stego PSNR,Extracted PSNR" << endl;
+                }
+
+                for (const auto& [matrixName, orthMatrix] : matrixTypes) {
+                    string matrixOutputDir = imageOutputDir + "/" + matrixName;
+                    createDirectory(matrixOutputDir);
+
+                    for (int TH = TH_min; TH <= TH_max; TH += TH_step) {
+                        double IF = (static_cast<double>(TH) / 255.0) * IF_RATIO_OF_THEORY;
+                        progress++;
+                        if (progress % 20 == 0 || progress == total_combinations) {
+                            cout << "進捗: " << progress << "/" << total_combinations
+                                 << " (" << (progress * 100 / total_combinations) << "%) "
+                                 << "(Cover=" << coverName << ", Secret=" << secretName
+                                 << ", TargetLine=" << targetLineValue << ")" << endl;
+                        }
+
+                        try {
+                            auto [stegoFile, stegoPSNR] = embedByThresholdAdjust(coverPath, secretPath, orthMatrix, TH, IF, matrixOutputDir);
+                            auto [extractedFile, extractedPSNR] = extractByThresholdAdjust(stegoFile, secretPath, orthMatrix, TH, IF, matrixOutputDir);
+
+                            csvFile << coverDisp << "," << secretDisp << "," << matrixName << "," << targetLineValue
+                                    << "," << TH << "," << std::fixed << std::setprecision(4) << IF
+                                    << "," << std::fixed << std::setprecision(2) << stegoPSNR
+                                    << "," << std::fixed << std::setprecision(2) << extractedPSNR << endl;
+
+                            if (imageCsvFile.is_open()) {
+                                imageCsvFile << matrixName << "," << TH << ","
+                                             << std::fixed << std::setprecision(4) << IF << ","
+                                             << std::fixed << std::setprecision(2) << stegoPSNR << ","
+                                             << std::fixed << std::setprecision(2) << extractedPSNR << endl;
+                            }
+                        } catch (const std::exception& e) {
+                            std::cerr << "エラー (Cover=" << coverDisp << ", Secret=" << secretDisp
+                                      << ", TH=" << TH << ", IF=" << IF
+                                      << ", Matrix=" << matrixName << ", TargetLine=" << targetLineValue << "): "
+                                      << e.what() << endl;
+
+                            csvFile << coverDisp << "," << secretDisp << "," << matrixName << "," << targetLineValue
+                                    << "," << TH << "," << std::fixed << std::setprecision(4) << IF
+                                    << ",ERROR,ERROR" << endl;
+
+                            if (imageCsvFile.is_open()) {
+                                imageCsvFile << matrixName << "," << TH << ","
+                                             << std::fixed << std::setprecision(4) << IF
+                                             << ",ERROR,ERROR" << endl;
+                            }
+                        }
+                    } // TH
+                } // matrixTypes
+
+                if (imageCsvFile.is_open()) imageCsvFile.close();
+                cout << "  " << secretDisp << " の処理完了: " << imageCsvPath << endl;
+            } // secretImages
+        } // coverImages
+    } // targetLineCandidates
 
     csvFile.close();
     cout << "========================================" << endl;
     cout << "すべての処理が完了しました！" << endl;
-    cout << "全体の結果は " << csvFilePath << " に保存されました。" << endl;
+    cout << "全体結果: " << csvFilePath << endl;
 
     return 0;
 }
