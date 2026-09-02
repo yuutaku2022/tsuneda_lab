@@ -303,7 +303,7 @@ git --version
 例:
 
 ```text
-https://github.com/ユーザー名/リポジトリ名.git
+https://github.com/yuutaku2022/tsuneda_lab.git
 ```
 
 もし GitHub で公開されていないローカルのリポジトリを使う場合は、別途そのURLを使ってクローンします。
@@ -338,7 +338,7 @@ git clone <リポジトリURL>
 例:
 
 ```bash
-git clone https://github.com/ユーザー名/tsuneda_lab.git
+git clone https://github.com/yuutaku2022/tsuneda_lab.git
 ```
 
 これで、リポジトリ名のフォルダが作られて、その中にコードが入ります。
