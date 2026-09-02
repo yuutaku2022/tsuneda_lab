@@ -33,8 +33,13 @@ find_package(OpenCV REQUIRED)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 target_link_libraries(compare_th_if ${OpenCV_LIBS})
 
+# Lenna 可視化用実行ファイル
+add_executable(lenna_hadamard_debruijn_heatmap src/lenna_hadamard_debruijn_heatmap.cpp)
+target_link_libraries(lenna_hadamard_debruijn_heatmap ${OpenCV_LIBS})
+
 # OpenCVのincludeディレクトリを追加
 target_include_directories(compare_th_if PUBLIC ${OpenCV_INCLUDE_DIRS})
+target_include_directories(lenna_hadamard_debruijn_heatmap PUBLIC ${OpenCV_INCLUDE_DIRS})
 
 # Eigen3ライブラリを探す（システムにインストールされているものを優先）
 find_package(Eigen3 3.4 QUIET)
